@@ -81,7 +81,8 @@ class FilesPage(webapp2.RequestHandler):
                 
             self.response.write('</pre></body></html>')
         except:
-            self.response.write('<html><body>Incorrect authorization code, please try again.</body></html')
+            self.response.write('<html><body>Incorrect authorization code,\
+                                please try again.</body></html')
 
 
 application = webapp2.WSGIApplication([

@@ -41,7 +41,7 @@ class MainPage(webapp2.RequestHandler):
         
         self.response.write('TenBox by Michael Vassilevsky<p></p>')
         self.response.write('Click ' + '<a href=' + authorize_url + ' target="_blank">here</a>' +
-                            ', click "Allow", and copy the authorization code')
+                            ', click "Allow", and copy the authorization code.')
         self.response.write(MAIN_PAGE_HTML)
 
 

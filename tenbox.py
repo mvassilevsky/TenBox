@@ -40,7 +40,8 @@ class MainPage(webapp2.RequestHandler):
         authorize_url = flow.start()
         
         self.response.write('TenBox by Michael Vassilevsky<p></p>')
-        self.response.write('Go to ' + authorize_url + ', click "Allow", and copy the authorization code')
+        self.response.write('Click ' + '<a href=' + authorize_url + ' target="_blank">here</a>' +
+                            ', click "Allow", and copy the authorization code')
         self.response.write(MAIN_PAGE_HTML)
 
 

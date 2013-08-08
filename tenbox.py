@@ -51,33 +51,37 @@ class FilesPage(webapp2.RequestHandler):
     def post(self):
         """Generates the files page"""
         
-        self.response.write('<html><body>Most recently modified files:<pre>')
-        code = cgi.escape(self.request.get('content'))
+        try:
+            code = cgi.escape(self.request.get('content'))
         
-        # gets access token, needed to make API requests
-        access_token, user_id = flow.finish(code)
-        
-        client = dropbox.client.DropboxClient(access_token)
-        folder_metadata = client.metadata('/') # gets metadata from the user's root folder
-        files_and_folders = folder_metadata['contents']
-        last_ten = []
-        for meta in files_and_folders:
-            if (meta['is_dir'] == False): # if not a folder
-                last_ten.append(meta)
-                
-                # parses and sorts files by date modified
-                sorted(last_ten, key = lambda l: parser.parse(l['modified']))
-                
-                # removes oldest file from list, if the list has more than ten elements
-                if (len(last_ten) > 10):
-                    last_ten.pop(0)
-                    
-        for elt in last_ten:
-            to_print = elt['path'][1:] # removes slash from path
-            self.response.write(to_print)
-            self.response.write('<p></p>')
+            # gets access token, needed to make API requests
+            access_token, user_id = flow.finish(code)
             
-        self.response.write('</pre></body></html>')
+            self.response.write('<html><body>Most recently modified files:<pre>')
+            
+            client = dropbox.client.DropboxClient(access_token)
+            folder_metadata = client.metadata('/') # gets metadata from the user's root folder
+            files_and_folders = folder_metadata['contents']
+            last_ten = []
+            for meta in files_and_folders:
+                if (meta['is_dir'] == False): # if not a folder
+                    last_ten.append(meta)
+                    
+                    # parses and sorts files by date modified
+                    sorted(last_ten, key = lambda l: parser.parse(l['modified']))
+                    
+                    # removes oldest file from list, if the list has more than ten elements
+                    if (len(last_ten) > 10):
+                        last_ten.pop(0)
+                        
+            for elt in last_ten:
+                to_print = elt['path'][1:] # removes slash from path
+                self.response.write(to_print)
+                self.response.write('<p></p>')
+                
+            self.response.write('</pre></body></html>')
+        except:
+            self.response.write('<html><body>Incorrect authorization code, please try again.</body></html')
 
 
 application = webapp2.WSGIApplication([

@@ -3,7 +3,7 @@
 <html>
   <body>
     {% for folder in folders %}
-      <p>{{folder}}</p>
+      <p><a href="/files/{{folder}}">{{folder}}</a></p>
     {% endfor %}
     {% for file in files %}
       <p>{{file}}</p>

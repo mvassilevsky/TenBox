@@ -31,11 +31,11 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
         """Generates the main page"""
         
-        url = sess.build_authorize_url(request_token, 'http://localhost:8080/files') # replace with address for version on appspot
+        url = sess.build_authorize_url(request_token, 'http://tenbox.appspot.com/files')
         self.redirect(url)
 
 class FilesPage(webapp2.RequestHandler):
-    """The files page, which displays up to 10 of the most recently modfied files"""
+    """The files page, which displays up to 10 of the most recently modfied files, as well as folders"""
 
     def get(self):
         """Generates the files page"""
@@ -68,7 +68,49 @@ class FilesPage(webapp2.RequestHandler):
             template_values = {
                     'files': files_to_print,
                     'folders': folders_to_print
-                }
+            }
+            
+            template = JINJA_ENVIRONMENT.get_template('filespage.html')
+            self.response.write(template.render(template_values))
+        except:
+            template = JINJA_ENVIRONMENT.get_template('error.html')
+            self.response.write(template.render())
+            
+class FilesPageInner(webapp2.RequestHandler):
+    """The files page for an inner folder, which displays up to 10 of the most recently modfied files, as well as folders"""
+
+    def get(self):
+        """Generates the files page"""
+        
+        try:
+            dr_client = client.DropboxClient(sess)
+            folder_address = self.request.url.split('/files')[1] # get names of subfolders
+            folder_metadata = dr_client.metadata(folder_address) # gets metadata from the user's inner folder
+            files_and_folders = folder_metadata['contents']
+            last_ten = []
+            files_to_print = []
+            folders_to_print = []
+            for meta in files_and_folders:
+                if (meta['is_dir'] == False): # if not a folder
+                    last_ten.append(meta)
+                    
+                    # parses and sorts files by date modified
+                    sorted(last_ten, key = lambda l: parser.parse(l['modified']))
+                    
+                    # removes oldest file from list, if the list has more than ten elements
+                    if (len(last_ten) > 10):
+                        last_ten.pop(0)
+                        
+                elif (meta['is_dir'] == True): # if a folder
+                    folders_to_print.append(meta['path'][1:]) # removes slash from path
+                      
+            for elt in last_ten:
+                files_to_print.append(elt['path'][1:]) # removes slash from path
+                
+            template_values = {
+                    'files': files_to_print,
+                    'folders': folders_to_print
+            }
             
             template = JINJA_ENVIRONMENT.get_template('filespage.html')
             self.response.write(template.render(template_values))
@@ -77,7 +119,9 @@ class FilesPage(webapp2.RequestHandler):
             self.response.write(template.render())
 
 
+
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/files', FilesPage)
+    ('/files', FilesPage),
+    ('/files/.*', FilesPageInner)
 ], debug=True)

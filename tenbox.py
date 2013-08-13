@@ -25,7 +25,7 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
         """Generates the main page"""
         
-        url = sess.build_authorize_url(request_token, 'http://localhost:8080/files')
+        url = sess.build_authorize_url(request_token, 'http://localhost:8080/files') # replace with address for version on appspot
         self.redirect(url)
 
 class FilesPage(webapp2.RequestHandler):

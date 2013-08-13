@@ -8,8 +8,14 @@ recently modified files.
 import webapp2
 import cgi
 import urllib2
+import os
+import jinja2
 from dropbox import client, rest, session
 from dateutil import parser
+
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'])
 
 # app key and secret from Dropbox developer website
 app_key = 'ehift129j568cs2'
@@ -34,9 +40,8 @@ class FilesPage(webapp2.RequestHandler):
     def get(self):
         """Generates the files page"""
         
+        access_token = sess.obtain_access_token(request_token)
         try:
-            self.response.write('<html><body>Most recently modified files:<pre>')
-            access_token = sess.obtain_access_token(request_token)
             dr_client = client.DropboxClient(sess)
             folder_metadata = dr_client.metadata('/') # gets metadata from the user's root folder
             files_and_folders = folder_metadata['contents']
@@ -51,15 +56,20 @@ class FilesPage(webapp2.RequestHandler):
                     # removes oldest file from list, if the list has more than ten elements
                     if (len(last_ten) > 10):
                         last_ten.pop(0)
-                        
+            
+            to_print = []            
             for elt in last_ten:
-                to_print = elt['path'][1:] # removes slash from path
-                self.response.write(to_print)
-                self.response.write('<p></p>')
+                to_print.append(elt['path'][1:]) # removes slash from path
                 
-            self.response.write('</pre></body></html>')
+            template_values = {
+                    'files': to_print,
+                }
+            
+            template = JINJA_ENVIRONMENT.get_template('filespage.html')
+            self.response.write(template.render(template_values))
         except:
-            self.response.write('<html><body>Incorrect authorization code, please try again.</body></html')
+            template = JINJA_ENVIRONMENT.get_template('error.html')
+            self.response.write(template.render(template_values))
 
 
 application = webapp2.WSGIApplication([

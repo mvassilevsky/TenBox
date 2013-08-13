@@ -5,30 +5,19 @@ Accesses a user's Dropbox account, then displays up to 10 of the user's most
 recently modified files.
 """
 
-import dropbox
 import webapp2
 import cgi
+import urllib2
+from dropbox import client, rest, session
 from dateutil import parser
 
 # app key and secret from Dropbox developer website
 app_key = 'ehift129j568cs2'
 app_secret = 'xtbohvv8u27c7wn'
+access_type = 'dropbox'
 
-# DropboxOAuth2FlowNoRedirect object, authorizes
-flow = dropbox.client.DropboxOAuth2FlowNoRedirect(app_key, app_secret)
-
-MAIN_PAGE_HTML = """\
-<html>
-  <body>
-  <p>Enter authorization code here:</p>
-    <form action="/files" method="post">
-      <div><textarea name="content" rows="1" cols="50"></textarea></div>
-      <div><input type="submit" value="Authorize"></div>
-    </form>
-  </body>
-</html>
-"""
-
+sess = session.DropboxSession(app_key, app_secret, access_type)
+request_token = sess.obtain_request_token()
 
 class MainPage(webapp2.RequestHandler):
     """The main page, used to link TenBox to a user's Dropbox account"""
@@ -36,31 +25,20 @@ class MainPage(webapp2.RequestHandler):
     def get(self):
         """Generates the main page"""
         
-        # generates an authorization URL using a DropboxOAuth2FlowNoRedirect object 
-        authorize_url = flow.start()
-        
-        self.response.write('TenBox by Michael Vassilevsky<p></p>')
-        self.response.write('Click ' + '<a href=' + authorize_url + ' target="_blank">here</a>' +
-                            ', click "Allow", and copy the authorization code.')
-        self.response.write(MAIN_PAGE_HTML)
-
+        url = sess.build_authorize_url(request_token, 'http://localhost:8080/files')
+        self.redirect(url)
 
 class FilesPage(webapp2.RequestHandler):
     """The files page, which displays up to 10 of the most recently modfied files"""
 
-    def post(self):
+    def get(self):
         """Generates the files page"""
         
         try:
-            code = cgi.escape(self.request.get('content'))
-        
-            # gets access token, needed to make API requests
-            access_token, user_id = flow.finish(code)
-            
             self.response.write('<html><body>Most recently modified files:<pre>')
-            
-            client = dropbox.client.DropboxClient(access_token)
-            folder_metadata = client.metadata('/') # gets metadata from the user's root folder
+            access_token = sess.obtain_access_token(request_token)
+            dr_client = client.DropboxClient(sess)
+            folder_metadata = dr_client.metadata('/') # gets metadata from the user's root folder
             files_and_folders = folder_metadata['contents']
             last_ten = []
             for meta in files_and_folders:
@@ -81,11 +59,10 @@ class FilesPage(webapp2.RequestHandler):
                 
             self.response.write('</pre></body></html>')
         except:
-            self.response.write('<html><body>Incorrect authorization code,\
-                                please try again.</body></html')
+            self.response.write('<html><body>Incorrect authorization code, please try again.</body></html')
 
 
 application = webapp2.WSGIApplication([
     ('/', MainPage),
-    ('/files', FilesPage),
+    ('/files', FilesPage)
 ], debug=True)

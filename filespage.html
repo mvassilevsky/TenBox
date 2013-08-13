@@ -2,6 +2,9 @@
 {% autoescape true %}
 <html>
   <body>
+    {% for folder in folders %}
+      <p>{{folder}}</p>
+    {% endfor %}
     {% for file in files %}
       <p>{{file}}</p>
     {% endfor %}

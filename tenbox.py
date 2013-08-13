@@ -46,6 +46,8 @@ class FilesPage(webapp2.RequestHandler):
             folder_metadata = dr_client.metadata('/') # gets metadata from the user's root folder
             files_and_folders = folder_metadata['contents']
             last_ten = []
+            files_to_print = []
+            folders_to_print = []
             for meta in files_and_folders:
                 if (meta['is_dir'] == False): # if not a folder
                     last_ten.append(meta)
@@ -56,20 +58,23 @@ class FilesPage(webapp2.RequestHandler):
                     # removes oldest file from list, if the list has more than ten elements
                     if (len(last_ten) > 10):
                         last_ten.pop(0)
-            
-            to_print = []            
+                        
+                elif (meta['is_dir'] == True): # if a folder
+                    folders_to_print.append(meta['path'][1:]) # removes slash from path
+                      
             for elt in last_ten:
-                to_print.append(elt['path'][1:]) # removes slash from path
+                files_to_print.append(elt['path'][1:]) # removes slash from path
                 
             template_values = {
-                    'files': to_print,
+                    'files': files_to_print,
+                    'folders': folders_to_print
                 }
             
             template = JINJA_ENVIRONMENT.get_template('filespage.html')
             self.response.write(template.render(template_values))
         except:
             template = JINJA_ENVIRONMENT.get_template('error.html')
-            self.response.write(template.render(template_values))
+            self.response.write(template.render())
 
 
 application = webapp2.WSGIApplication([
